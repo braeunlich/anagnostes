@@ -29,6 +29,7 @@ public class Normalizer {
     // 2. scale to fit into 20x20 box while preserving aspect ratio. this gives us grayscale image because of anti-aliasing
     BufferedImage scaledImage = resize(binaryImage, SCALE_TARGET_SIZE_X, SCALE_TARGET_SIZE_Y);
 //    BufferedImage scaledImage = scaleImage(binaryImage, scaleRatio, scaleRatio);
+    outputJpgFile("c:/temp3/seven60_teil.jpg", scaledImage);
     int[][] scaledImageMatrix = grayscaleImageToPixelMatrix(scaledImage);
     // 3. calculate center of gravity of image
     // 4. center image using center of gravity in a 28x28 box
@@ -44,7 +45,7 @@ public class Normalizer {
     BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        image.setRGB(x, y, imageMatrix[x][y]);
+        image.setRGB(x, y, (255 << 24) | (imageMatrix[x][y] << 16) | (imageMatrix[x][y] << 8) | imageMatrix[x][y]);
       }
     }
     return image;
@@ -54,15 +55,24 @@ public class Normalizer {
 
   private static int[][] scaleAndCenterToTarget(int[][] sourceImageMatrix) {
     double[] centerOfGravity = calcCenterOfGravity(sourceImageMatrix);
-    int centerX = (int) centerOfGravity[0];
-    int centerY = (int) centerOfGravity[1];
+    int centerX = (int) Math.round(centerOfGravity[0]);
+    int centerY = (int) Math.round(centerOfGravity[1]);
     // center could be too far to one side. best effort:
     int maxCenterDeltaX = (TARGET_SIZE_X - SCALE_TARGET_SIZE_X) / 2;
     int maxCenterDeltaY = (TARGET_SIZE_Y - SCALE_TARGET_SIZE_Y) / 2;
-    centerX = Math.max(SCALE_TARGET_SIZE_X / 2 - maxCenterDeltaX, centerX);
-    centerX = Math.min(SCALE_TARGET_SIZE_X / 2 + maxCenterDeltaX, centerX);
-    centerY = Math.max(SCALE_TARGET_SIZE_Y / 2 - maxCenterDeltaY, centerY);
-    centerY = Math.min(SCALE_TARGET_SIZE_Y / 2 + maxCenterDeltaY, centerY);
+
+    if (centerX < SCALE_TARGET_SIZE_X / 2 - maxCenterDeltaX) {
+      centerX = SCALE_TARGET_SIZE_X / 2 - maxCenterDeltaX;
+    }
+    else if (centerX > SCALE_TARGET_SIZE_X / 2 + maxCenterDeltaX) {
+      centerX = SCALE_TARGET_SIZE_X / 2 + maxCenterDeltaX;
+    }
+    if (centerY < SCALE_TARGET_SIZE_Y / 2 - maxCenterDeltaY) {
+      centerY = SCALE_TARGET_SIZE_Y / 2 - maxCenterDeltaY;
+    }
+    else if (centerY > SCALE_TARGET_SIZE_Y / 2 + maxCenterDeltaY) {
+      centerY = SCALE_TARGET_SIZE_Y / 2 + maxCenterDeltaY;
+    }
     int translateX = TARGET_SIZE_X / 2 - centerX;
     int translateY = TARGET_SIZE_Y / 2 - centerY;
     int[][] targetImageMatrix = new int[TARGET_SIZE_X][TARGET_SIZE_Y];
@@ -73,6 +83,9 @@ public class Normalizer {
         if (sourceImageMatrixX >= 0 && sourceImageMatrixX < SCALE_TARGET_SIZE_X
             && sourceImageMatrixY >= 0 && sourceImageMatrixY < SCALE_TARGET_SIZE_Y) {
           targetImageMatrix[x][y] = sourceImageMatrix[sourceImageMatrixX][sourceImageMatrixY];
+        }
+        else {
+          targetImageMatrix[x][y] = 255;
         }
       }
     }
@@ -105,11 +118,7 @@ public class Normalizer {
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
         int p = bwImage.getRGB(x, y);
-        int r = (p >> 16) & 0xff;
-        int g = (p >> 8) & 0xff;
-        int b = p & 0xff;
-        int gray = (r + g + b) / 3;
-        matrix[x][y] = gray;
+        matrix[x][y] = p & 0xff;
       }
     }
     return matrix;
@@ -130,8 +139,8 @@ public class Normalizer {
    *
    * @param picture
    *          in gray scale values. points are weighed in accordance with their gray scale. So double the gray scale
-   *          means double weight.
-   * @return
+   *          means double weight. But beware: value 255=white, 0=black, so 255-value is in fact the weight of a pixel
+   * @return center of gravity (x,y), (undefined if picture is all white)
    */
   public static double[] calcCenterOfGravity(int[][] picture) {
     MathContext mc = MathContext.DECIMAL32;
@@ -142,11 +151,11 @@ public class Normalizer {
     for (int rowIndex = 0; rowIndex < picture.length; rowIndex++) {
       int[] row = picture[rowIndex];
       for (int columnIndex = 0; columnIndex < row.length; columnIndex++) {
-        int grayScale = row[columnIndex];
-        if (grayScale > 0) {
-          summedRowGrayScaleValues = summedRowGrayScaleValues.add(BigDecimal.valueOf(grayScale * rowIndex), mc);
-          summedColumnGrayScaleValues = summedColumnGrayScaleValues.add(BigDecimal.valueOf(grayScale * columnIndex), mc);
-          summedGrayScaleValues = summedGrayScaleValues.add(BigDecimal.valueOf(grayScale), mc);
+        int grayScaleWeight = 255 - row[columnIndex];
+        if (grayScaleWeight > 0) {
+          summedRowGrayScaleValues = summedRowGrayScaleValues.add(BigDecimal.valueOf(grayScaleWeight * rowIndex), mc);
+          summedColumnGrayScaleValues = summedColumnGrayScaleValues.add(BigDecimal.valueOf(grayScaleWeight * columnIndex), mc);
+          summedGrayScaleValues = summedGrayScaleValues.add(BigDecimal.valueOf(grayScaleWeight), mc);
         }
       }
     }
@@ -179,7 +188,7 @@ public class Normalizer {
   /* ************************************************************************************* */
 
   public static void main(String[] args) throws IOException {
-    BufferedImage originalImage = ImageIO.read(new File("seven60.jpg"));
+    BufferedImage originalImage = ImageIO.read(new File("src/main/resources/seven60.jpg"));
     BufferedImage newImage = transform(originalImage);
     outputJpgFile("c:/temp3/seven60_conv.jpg", newImage);
   }
