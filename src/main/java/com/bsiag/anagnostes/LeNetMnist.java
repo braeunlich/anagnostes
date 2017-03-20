@@ -1,8 +1,10 @@
 package com.bsiag.anagnostes;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -68,7 +70,7 @@ public class LeNetMnist {
 		try {
 			m_model = ModelSerializer.restoreMultiLayerNetwork(file);
 		} catch (IOException e) {
-			log.error("couldn't load model");
+			log.error("couldn't load model", e);
 		}
 	}
 
@@ -133,5 +135,11 @@ public class LeNetMnist {
 						new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(NUM_OUTPUTS)
 								.activation(Activation.SOFTMAX).build())
 				.setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true).pretrain(false).build();
+	}
+	
+	public NumbersEvalResult eval(BufferedImage image) {
+		return new NumbersEvalResult(
+				(ThreadLocalRandom.current().nextInt(50, 100) / 100d),
+				String.valueOf(ThreadLocalRandom.current().nextInt(0, 10)).charAt(0));
 	}
 }
