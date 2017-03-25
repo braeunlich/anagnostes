@@ -36,7 +36,7 @@ public class Normalizer {
 		return toImage(targetScaledImageMatrix);
 	}
 
-	public static double[] transformToMnsitIteratorFormat(BufferedImage image) throws IOException {
+	public static float[] transformToMnsitIteratorFormat(BufferedImage image) throws IOException {
 		// 1. binarize
 		BufferedImage binaryImage = toBinaryImage(image);
 		// 2. scale to fit into 20x20 box while preserving aspect ratio. this gives us grayscale image because of
@@ -185,21 +185,13 @@ public class Normalizer {
 	
 	/* ************************************************************************************* */
 	
-	public static void outputJpgFile(String filename, double[] mnsitFormat) throws IOException {
-		outputJpgFile(filename, toBufferedImage(mnsitFormat));
-	}
-	
-	public static void outputJpgFile(String filename, float[] mnsitFormatFloat) throws IOException {
-		double[] mnsitFormat = new double[mnsitFormatFloat.length];
-		for (int i=0; i<mnsitFormatFloat.length; i++) {
-			mnsitFormat[i] = mnsitFormatFloat[i];
-		}
+	public static void outputJpgFile(String filename, float[] mnsitFormat) throws IOException {
 		outputJpgFile(filename, toBufferedImage(mnsitFormat));
 	}
 
 	/* ************************************************************************************* */
 	
-	private static BufferedImage toBufferedImage(double[] mnsitFormat) {
+	private static BufferedImage toBufferedImage(float[] mnsitFormat) {
 		int[][] imageMatrix = new int[TARGET_SIZE_X][TARGET_SIZE_Y];
 		for(int i=0; i<TARGET_SIZE_X * TARGET_SIZE_Y; i++) {
 			imageMatrix[i%TARGET_SIZE_X][i/TARGET_SIZE_X] = toRGB(mnsitFormat[i]);
@@ -207,8 +199,8 @@ public class Normalizer {
 		return toImage(imageMatrix);
 	}
 
-	private static double[] toMnistFormat(int[][] intarray) {
-		double[] doublearray = new double[intarray.length * intarray[0].length];
+	private static float[] toMnistFormat(int[][] intarray) {
+		float[] doublearray = new float[intarray.length * intarray[0].length];
 		
 		for (int i = 0; i < intarray.length; i++) {
 			for (int j = 0; j < intarray[0].length; j++){
@@ -219,11 +211,11 @@ public class Normalizer {
 		return doublearray;
 	}
 	
-	private static double toMnsitFormat(int rgb) {
-		return (255.0 - rgb) / 255.0;
+	private static float toMnsitFormat(int rgb) {
+		return (255.0F - rgb) / 255.0F;
 	}
 	
-	private static int toRGB(double d) {
+	private static int toRGB(float d) {
 		return (int) (255 - (d * 255));
 	}
 

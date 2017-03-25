@@ -37,7 +37,7 @@ public class LeNetMnist {
 	private static final int NUM_ITERATIONS = 1;
 	private static final int SEED = 123;
 	private static final int BATCH_SIZE = 64;
-	private static final int NUM_EPOCHS = 1;
+	private static final int NUM_EPOCHS = 6;
 
 	private MultiLayerNetwork m_model;
 
@@ -52,6 +52,22 @@ public class LeNetMnist {
 
 		log.info("Train model....");
 		train(mnistTrain, mnistTest, m_model);
+
+		log.info("Storing model...");
+		store(file);
+	}
+	
+	public void trainAndSaveNumbersModel(String numbersBaseFolder, File file) throws Exception {
+
+		log.info("Load data....");
+		DataSetIterator trainSet = new NumbersDatasetIterator(BATCH_SIZE, numbersBaseFolder, true);
+		DataSetIterator testSet = new NumbersDatasetIterator(BATCH_SIZE, numbersBaseFolder, false);
+
+		log.info("Build model....");
+		buildModel();
+
+		log.info("Train model....");
+		train(trainSet, testSet, m_model);
 
 		log.info("Storing model...");
 		store(file);
@@ -74,21 +90,21 @@ public class LeNetMnist {
 		}
 	}
 
-	public void train(DataSetIterator mnistTrain, DataSetIterator mnistTest, MultiLayerNetwork model) {
+	public void train(DataSetIterator trainSet, DataSetIterator testSet, MultiLayerNetwork model) {
 		model.setListeners(new ScoreIterationListener(1));
 		for (int i = 0; i < NUM_EPOCHS; i++) {
-			model.fit(mnistTrain);
+			model.fit(trainSet);
 			log.info("*** Completed epoch {} ***", i);
 
 			log.info("Evaluate model....");
 			Evaluation eval = new Evaluation(NUM_OUTPUTS);
-			while (mnistTest.hasNext()) {
-				DataSet ds = mnistTest.next();
+			while (testSet.hasNext()) {
+				DataSet ds = testSet.next();
 				INDArray output = model.output(ds.getFeatureMatrix(), false);
 				eval.eval(ds.getLabels(), output);
 			}
 			log.info(eval.stats());
-			mnistTest.reset();
+			testSet.reset();
 		}
 	}
 
@@ -126,7 +142,7 @@ public class LeNetMnist {
 	}
 
 	public NumbersEvalResult eval(BufferedImage image) {
-		double[] normalizeImage = normalizeImage(image);
+		float[] normalizeImage = normalizeImage(image);
 
 		debugOutputImage(normalizeImage);
 		
@@ -137,7 +153,7 @@ public class LeNetMnist {
 		return new NumbersEvalResult(output.getDouble(result), String.valueOf(result).charAt(0));
 	}
 
-	private void debugOutputImage(double[] normalizeImage) {
+	private void debugOutputImage(float[] normalizeImage) {
 		try {
 			Normalizer.outputJpgFile(App.DEBUG_PATH + "tmp.jpg", normalizeImage);
 		} catch (IOException e) {
@@ -155,8 +171,8 @@ public class LeNetMnist {
 		return maxValueIndex;
 	}
 	
-	private double[] normalizeImage(BufferedImage image) {
-		double[] normalizedRawData;
+	private float[] normalizeImage(BufferedImage image) {
+		float[] normalizedRawData;
 		try {
 			normalizedRawData = Normalizer.transformToMnsitIteratorFormat(image);
 		} catch (IOException e) {

@@ -1,0 +1,11 @@
+package com.bsiag.anagnostes;
+
+import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
+
+public class NumbersDatasetIterator extends BaseDatasetIterator {
+	private static final long serialVersionUID = 1L;
+	
+	public NumbersDatasetIterator(int batch, String baseFolder, boolean train) {
+		super(batch, new NumbersDataFetcher(baseFolder, train).getNumExamples(), new NumbersDataFetcher(baseFolder, train));
+	}
+}
