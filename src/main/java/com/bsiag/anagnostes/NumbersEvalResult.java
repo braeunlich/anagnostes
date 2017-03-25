@@ -25,4 +25,9 @@ public class NumbersEvalResult {
 	public void setCharacter(char character) {
 		this.m_character = character;
 	}
+	
+	@Override
+	public String toString() {
+		return "Recognized character: '" + getCharacter() + "', confidence: " + getConfidence();
+	}
 }

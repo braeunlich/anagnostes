@@ -4,7 +4,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -25,6 +24,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ public class LeNetMnist {
 	private MultiLayerNetwork m_model;
 
 	public void trainAndSaveModel(File file) throws Exception {
-		
+
 		log.info("Load data....");
 		DataSetIterator mnistTrain = new MnistDataSetIterator(BATCH_SIZE, true, 12345);
 		DataSetIterator mnistTest = new MnistDataSetIterator(BATCH_SIZE, false, 12345);
@@ -94,52 +94,74 @@ public class LeNetMnist {
 
 	protected MultiLayerConfiguration getConfiguration() {
 		/*
-		 * Regarding the .setInputType(InputType.convolutionalFlat(28,28,1))
-		 * line: This does a few things. (a) It adds preprocessors, which handle
-		 * things like the transition between the convolutional/subsampling
-		 * layers and the dense layer (b) Does some additional configuration
-		 * validation (c) Where necessary, sets the nIn (number of input
-		 * neurons, or input depth in the case of CNNs) values for each layer
-		 * based on the size of the previous layer (but it won't override values
-		 * manually set by the user) InputTypes can be used with other layer
-		 * types too (RNNs, MLPs etc) not just CNNs. For normal images (when
-		 * using ImageRecordReader) use
-		 * InputType.convolutional(height,width,depth). MNIST record reader is a
-		 * special case, that outputs 28x28 pixel grayscale (nChannels=1)
-		 * images, in a "flattened" row vector format (i.e., 1x784 vectors),
-		 * hence the "convolutionalFlat" input type used here.
+		 * Regarding the .setInputType(InputType.convolutionalFlat(28,28,1)) line: This does a few things. (a) It adds
+		 * preprocessors, which handle things like the transition between the convolutional/subsampling layers and the dense
+		 * layer (b) Does some additional configuration validation (c) Where necessary, sets the nIn (number of input
+		 * neurons, or input depth in the case of CNNs) values for each layer based on the size of the previous layer (but
+		 * it won't override values manually set by the user) InputTypes can be used with other layer types too (RNNs, MLPs
+		 * etc) not just CNNs. For normal images (when using ImageRecordReader) use
+		 * InputType.convolutional(height,width,depth). MNIST record reader is a special case, that outputs 28x28 pixel
+		 * grayscale (nChannels=1) images, in a "flattened" row vector format (i.e., 1x784 vectors), hence the
+		 * "convolutionalFlat" input type used here.
 		 */
-		return new NeuralNetConfiguration.Builder().seed(SEED).iterations(NUM_ITERATIONS).regularization(true)
-				.l2(0.0005).
-				/*
-				 * Uncomment the following for learning decay and bias
-				 */
+		return new NeuralNetConfiguration.Builder().seed(SEED).iterations(NUM_ITERATIONS).regularization(true).l2(0.0005).
+		/*
+		 * Uncomment the following for learning decay and bias
+		 */
 				learningRate(.01).// biasLearningRate(0.02).
 				// learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75).
 				weightInit(WeightInit.XAVIER).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
 				.updater(Updater.NESTEROVS).momentum(0.9).list()
 				.layer(0,
-						new ConvolutionLayer.Builder(5, 5).nIn(NUM_CHANNELS).stride(1, 1).nOut(20)
-								.activation(Activation.IDENTITY).build())
-				.layer(1,
-						new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).stride(2, 2)
+						new ConvolutionLayer.Builder(5, 5).nIn(NUM_CHANNELS).stride(1, 1).nOut(20).activation(Activation.IDENTITY)
 								.build())
-				.layer(2,
-						new ConvolutionLayer.Builder(5, 5).stride(1, 1).nOut(50).activation(Activation.IDENTITY)
-								.build())
-				.layer(3,
-						new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).stride(2, 2)
-								.build())
+				.layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).stride(2, 2).build())
+				.layer(2, new ConvolutionLayer.Builder(5, 5).stride(1, 1).nOut(50).activation(Activation.IDENTITY).build())
+				.layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).stride(2, 2).build())
 				.layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
 				.layer(5,
 						new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(NUM_OUTPUTS)
 								.activation(Activation.SOFTMAX).build())
 				.setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true).pretrain(false).build();
 	}
-	
+
 	public NumbersEvalResult eval(BufferedImage image) {
-		return new NumbersEvalResult(
-				(ThreadLocalRandom.current().nextInt(50, 100) / 100d),
-				String.valueOf(ThreadLocalRandom.current().nextInt(0, 10)).charAt(0));
+		double[] normalizeImage = normalizeImage(image);
+
+		debugOutputImage(normalizeImage);
+		
+		INDArray input = Nd4j.create(normalizeImage);
+		INDArray output = m_model.output(input);
+		int result = getLabel(output);
+		
+		return new NumbersEvalResult(output.getDouble(result), String.valueOf(result).charAt(0));
+	}
+
+	private void debugOutputImage(double[] normalizeImage) {
+		try {
+			Normalizer.outputJpgFile(App.DEBUG_PATH + "tmp.jpg", normalizeImage);
+		} catch (IOException e) {
+			throw new RuntimeException("Couldn't output the image");
+		}
+	}
+	
+	private int getLabel(INDArray output) {
+		int maxValueIndex = 0;
+		for(int i=1; i<NUM_OUTPUTS; i++) {
+			if(output.getDouble(i) > output.getDouble(maxValueIndex)) {
+				maxValueIndex = i;
+			}
+		}
+		return maxValueIndex;
+	}
+	
+	private double[] normalizeImage(BufferedImage image) {
+		double[] normalizedRawData;
+		try {
+			normalizedRawData = Normalizer.transformToMnsitIteratorFormat(image);
+		} catch (IOException e) {
+			throw new RuntimeException("Couldn't normalize the image");
+		}
+		return normalizedRawData;
 	}
 }
