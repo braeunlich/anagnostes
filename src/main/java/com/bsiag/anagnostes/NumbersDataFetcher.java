@@ -22,6 +22,10 @@ public class NumbersDataFetcher extends BaseDataFetcher {
 	private static final String FILE_REGEX = "^number-\\d+.png$";
 	private static final String FOLDER_REGEX = "^\\d{4}_\\S{4}$";
 
+	static final String NUMBERS_FOLDER_NAME = "numbers";
+	static final String IMG_PATH = NumbersDataFetcher.class.getClassLoader().getResource(NUMBERS_FOLDER_NAME).getFile()
+			+ File.separator;
+
 	private final String m_baseFolder;
 	private List<String> m_testFolderNames = Arrays.asList("0020_CH4M", "0021_CH4M");
 	private final boolean m_train;
@@ -51,6 +55,14 @@ public class NumbersDataFetcher extends BaseDataFetcher {
 			value = newValue;
 			return oldValue;
 		}
+	}
+
+	public NumbersDataFetcher() {
+		this(IMG_PATH);
+	}
+	
+	public NumbersDataFetcher(boolean train) {
+		this(IMG_PATH, train);
 	}
 
 	public NumbersDataFetcher(final String baseFolder) {
@@ -158,5 +170,4 @@ public class NumbersDataFetcher extends BaseDataFetcher {
 		list.removeAll(m_testFolderNames);
 		return list;
 	}
-
 }

@@ -60,8 +60,16 @@ public class NeuralNetwork {
 			return trainSetIterator(ConfigurationFactory.numbersTrainDataSetIterator(numbersBaseFolder));
 		}
 		
+		public Builder numbersTrainDataSetIterator() {
+			return trainSetIterator(ConfigurationFactory.numbersTrainDataSetIterator());
+		}
+		
 		public Builder numbersTestDataSetIterator(String numbersBaseFolder) {
 			return testSetIterator(ConfigurationFactory.numbersTestDataSetIterator(numbersBaseFolder));
+		}
+		
+		public Builder numbersTestDataSetIterator() {
+			return testSetIterator(ConfigurationFactory.numbersTestDataSetIterator());
 		}
 		
 		public Builder mnistTrainSetIterator() {

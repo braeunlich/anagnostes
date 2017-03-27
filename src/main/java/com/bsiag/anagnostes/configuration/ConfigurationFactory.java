@@ -80,7 +80,15 @@ public class ConfigurationFactory {
 		return new NumbersDatasetIterator(BATCH_SIZE, numbersBaseFolder, true);
 	}
 	
+	public static DataSetIterator numbersTrainDataSetIterator() {
+		return new NumbersDatasetIterator(BATCH_SIZE, true);
+	}
+	
 	public static DataSetIterator numbersTestDataSetIterator(String numbersBaseFolder) {
 		return new NumbersDatasetIterator(BATCH_SIZE, numbersBaseFolder, false);
+	}
+	
+	public static DataSetIterator numbersTestDataSetIterator() {
+		return new NumbersDatasetIterator(BATCH_SIZE, false);
 	}
 }
