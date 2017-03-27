@@ -1,13 +1,13 @@
 package com.bsiag.anagnostes;
 
-public class NumbersEvalResult {
+public class Output {
 
 	private double m_confidence;
-	private char m_character;
+	private char m_value;
 
-	public NumbersEvalResult(double confidence, char character) {
+	public Output(double confidence, char value) {
 		this.m_confidence = confidence;
-		this.m_character = character;
+		this.m_value = value;
 	}
 
 	public double getConfidence() {
@@ -19,15 +19,19 @@ public class NumbersEvalResult {
 	}
 
 	public char getCharacter() {
-		return m_character;
+		return m_value;
 	}
 
 	public void setCharacter(char character) {
-		this.m_character = character;
+		this.m_value = character;
 	}
 	
 	@Override
 	public String toString() {
 		return "Recognized character: '" + getCharacter() + "', confidence: " + getConfidence();
+	}
+	
+	public void print() {
+		System.out.println(this);
 	}
 }
