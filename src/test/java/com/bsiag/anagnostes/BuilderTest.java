@@ -10,7 +10,7 @@ import org.junit.Test;
 public class BuilderTest {
 	
 	@Test
-	public void loadFromFile() {
+	public void loadFromNumbersFile() {
 		NeuralNetwork model = new NeuralNetwork.Builder()
 				.fromFile(MODEL_NUMBERS_FILE);
 
@@ -21,11 +21,23 @@ public class BuilderTest {
 	}
 	
 	@Test
-	public void buildAndTrain() {
+	public void loadFromMnistFile() {
+		NeuralNetwork model = new NeuralNetwork.Builder()
+				.fromFile(MODEL_MNIST_FILE);
+		
+		assertNotNull(model);
+		
+		printTestSetAOutput(model);
+		printTestSetBOutput(model);
+	}
+	
+	@Test
+	public void buildAndTrainNumbers() {
 		NeuralNetwork model = new NeuralNetwork.Builder()
 				.leNetConfiguration()
-				.numbersTrainDataSetIterator()
-				.numbersTestDataSetIterator()
+				.logProcess()
+				.numbersTrainSetIterator()
+				.numbersTestSetIterator()
 				.epochs(6)
 				.build();
 		
@@ -33,9 +45,22 @@ public class BuilderTest {
 		model.store(new File(USER_HOME + SEPARATOR + MODEL_NUMBERS_ZIP_NAME));		
 	}
 	
+	@Test
+	public void buildAndTrainMnist() {
+		NeuralNetwork model = new NeuralNetwork.Builder()
+				.leNetConfiguration()
+				.mnistTrainSetIterator()
+				.mnistTestSetIterator()
+				.epochs(15)
+				.build();
+		
+		model.train();
+		model.store(new File(USER_HOME + SEPARATOR + MODEL_MNIST_ZIP_NAME));		
+	}
+	
 	public static void main(String[] args) {
 		NeuralNetwork model = new NeuralNetwork.Builder()
-				.numbersTestDataSetIterator()
+				.numbersTestSetIterator()
 				.fromFile(MODEL_NUMBERS_FILE);
 		
 		model.evaluate();

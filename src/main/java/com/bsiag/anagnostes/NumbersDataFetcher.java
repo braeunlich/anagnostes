@@ -60,7 +60,7 @@ public class NumbersDataFetcher extends BaseDataFetcher {
 	public NumbersDataFetcher() {
 		this(IMG_PATH);
 	}
-	
+
 	public NumbersDataFetcher(boolean train) {
 		this(IMG_PATH, train);
 	}

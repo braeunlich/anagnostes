@@ -9,6 +9,7 @@ import javax.imageio.ImageIO;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -60,7 +61,7 @@ public class NeuralNetwork {
 			return trainSetIterator(ConfigurationFactory.numbersTrainDataSetIterator(numbersBaseFolder));
 		}
 		
-		public Builder numbersTrainDataSetIterator() {
+		public Builder numbersTrainSetIterator() {
 			return trainSetIterator(ConfigurationFactory.numbersTrainDataSetIterator());
 		}
 		
@@ -68,7 +69,7 @@ public class NeuralNetwork {
 			return testSetIterator(ConfigurationFactory.numbersTestDataSetIterator(numbersBaseFolder));
 		}
 		
-		public Builder numbersTestDataSetIterator() {
+		public Builder numbersTestSetIterator() {
 			return testSetIterator(ConfigurationFactory.numbersTestDataSetIterator());
 		}
 		
@@ -78,6 +79,24 @@ public class NeuralNetwork {
 		
 		public Builder mnistTestSetIterator() {
 			return testSetIterator(ConfigurationFactory.mnistTestSetIterator());
+		}
+		
+		public Builder logScore() {
+			if(!m_network.isModelInitialized()) {
+				throw new RuntimeException("Model is not yet initialized. You can initialized the model first with e.g. configuration() or loadFromFile()");
+			}
+			
+			m_network.setListeners(new ScoreIterationListener(1));
+			return this;
+		}
+		
+		public Builder logProcess() {
+			if(!m_network.isModelInitialized()) {
+				throw new RuntimeException("Model is not yet initialized. You can initialized the model first with e.g. configuration() or loadFromFile()");
+			}
+			
+			m_network.setListeners(new TrainProgressIterationListener(1));
+			return this;
 		}
 		
 		public Builder epochs(int epochs) {
@@ -103,6 +122,14 @@ public class NeuralNetwork {
 		}
 	}
 
+	public boolean isModelInitialized() {
+		return m_model != null;
+	}
+	
+	public void setListeners(IterationListener iterationListener) {
+		m_model.setListeners(iterationListener);		
+	}
+
 	public void loadModel(File file) {
 		try {
 			m_model = ModelSerializer.restoreMultiLayerNetwork(file);
@@ -120,7 +147,6 @@ public class NeuralNetwork {
 			log.warn("No test data set iterator specified. Model will not be evaluated.");
 		}
 		
-		m_model.setListeners(new ScoreIterationListener(1));
 		for (int i = 0; i < m_epochs; i++) {
 			m_model.fit(m_trainSet);
 			log.info("*** Completed epoch {} ***", i);
